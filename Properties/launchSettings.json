@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "TuringLite (ventana)": {
+      "commandName": "Project"
+    },
+    "TuringLite (solo bandeja)": {
+      "commandName": "Project",
+      "commandLineArgs": "--tray"
+    }
+  }
+}

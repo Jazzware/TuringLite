@@ -1,0 +1,26 @@
+{
+  // Diseño horizontal 480x320. Si queda al revés, cambia "landscape" por "reverse-landscape".
+  "port": "AUTO",
+  "brightness": 40,
+  "orientation": "landscape",
+  "intervalMs": 2000,
+  // GPU a usar: parte de su nombre, p. ej. "RTX" o "RX 7800". Vacío = la dedicada automáticamente
+  "gpu": "",
+  // Las regiones más anchas se envían en franjas de este ancho (0 = sin límite)
+  "maxRegionWidth": 200,
+  // Tema visual: classic (usa "background") | neon | cyber | fire | terminal | nocturne | minimal-light | minimal-graphite | retro-amber | soft-sky | high-contrast
+  "theme": "classic",
+  "background": "#12161C",
+  "widgets": [
+    { "type": "clock", "x": 10, "y": 6, "w": 200, "h": 64, "format": "HH:mm" },
+    { "type": "text", "file": "status.txt", "text": "Escribe en status.txt", "x": 220, "y": 10, "w": 250, "h": 60, "fontSize": 10 },
+
+    { "type": "sensor", "label": "CPU TEMP", "sensor": "cpu.temp", "unit": "°C", "warn": 70, "crit": 85, "bar": true, "fontSize": 26, "x": 10,  "y": 80,  "w": 150, "h": 100 },
+    { "type": "sensor", "label": "CPU LOAD", "sensor": "cpu.load", "unit": "%",  "warn": 80, "crit": 95, "bar": true, "fontSize": 26, "x": 165, "y": 80,  "w": 150, "h": 100 },
+    { "type": "sensor", "label": "CPU POWER", "sensor": "cpu.power", "unit": " W", "max": 200, "bar": true, "fontSize": 26, "x": 320, "y": 80,  "w": 150, "h": 100 },
+
+    { "type": "sensor", "label": "GPU TEMP", "sensor": "gpu.temp", "unit": "°C", "warn": 75, "crit": 87, "bar": true, "fontSize": 26, "x": 10,  "y": 190, "w": 150, "h": 100 },
+    { "type": "sensor", "label": "GPU LOAD", "sensor": "gpu.load", "unit": "%",  "warn": 85, "crit": 98, "bar": true, "fontSize": 26, "x": 165, "y": 190, "w": 150, "h": 100 },
+    { "type": "sensor", "label": "RAM",      "sensor": "ram.load", "unit": "%",  "warn": 80, "crit": 92, "bar": true, "fontSize": 26, "x": 320, "y": 190, "w": 150, "h": 100 }
+  ]
+}

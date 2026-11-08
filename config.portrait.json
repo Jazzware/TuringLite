@@ -1,0 +1,36 @@
+{
+  // Puerto: "AUTO" detecta la pantalla por VID/PID; o fija "COM3"
+  "port": "AUTO",
+  "brightness": 40,
+  "orientation": "portrait",
+  "intervalMs": 2000,
+  // GPU a usar: parte de su nombre, p. ej. "RTX" o "RX 7800". Vacío = la dedicada automáticamente
+  "gpu": "",
+  // Las regiones más anchas se envían en franjas de este ancho (0 = sin límite)
+  "maxRegionWidth": 200,
+  // Tema visual: classic (usa "background") | neon | cyber | fire | terminal | nocturne | minimal-light | minimal-graphite | retro-amber | soft-sky | high-contrast
+  "theme": "classic",
+  "background": "#12161C",
+  "widgets": [
+    { "type": "clock",  "x": 10, "y": 10,  "w": 300, "h": 70, "format": "HH:mm" },
+
+    { "type": "sensor", "label": "CPU TEMP", "sensor": "cpu.temp", "unit": "°C", "warn": 70, "crit": 85, "bar": true,
+      "x": 10, "y": 95,  "w": 145, "h": 60 },
+    { "type": "sensor", "label": "CPU LOAD", "sensor": "cpu.load", "unit": "%", "warn": 80, "crit": 95, "bar": true,
+      "x": 165, "y": 95, "w": 145, "h": 60 },
+
+    { "type": "sensor", "label": "GPU TEMP", "sensor": "gpu.temp", "unit": "°C", "warn": 75, "crit": 87, "bar": true,
+      "x": 10, "y": 165, "w": 145, "h": 60 },
+    { "type": "sensor", "label": "GPU LOAD", "sensor": "gpu.load", "unit": "%", "warn": 85, "crit": 98, "bar": true,
+      "x": 165, "y": 165, "w": 145, "h": 60 },
+
+    { "type": "sensor", "label": "RAM", "sensor": "ram.load", "unit": "%", "warn": 80, "crit": 92, "bar": true,
+      "x": 10, "y": 235, "w": 145, "h": 60 },
+    { "type": "sensor", "label": "CPU POWER", "sensor": "cpu.power", "unit": " W", "decimals": 0, "max": 200,
+      "x": 165, "y": 235, "w": 145, "h": 60 },
+
+    // Contenido propio: lee un archivo de texto y lo muestra cuando cambia
+    { "type": "text", "file": "status.txt", "text": "Escribe en status.txt para mostrar aquí lo que quieras",
+      "x": 10, "y": 310, "w": 300, "h": 160, "fontSize": 11 }
+  ]
+}

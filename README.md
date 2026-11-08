@@ -1,0 +1,61 @@
+# TuringLite
+
+Monitor de hardware para la mini pantalla USB Turing Smart Screen de 3,5". Muestra temperaturas, cargas, potencia y tu propio texto, con temas visuales.
+
+## Requisitos
+
+- Windows 10 (1809 o posterior) o Windows 11.
+- **.NET 8 Desktop Runtime** (x64): <https://dotnet.microsoft.com/download/dotnet/8.0>. El instalador no lo descarga.
+- Para la temperatura de CPU: el servicio de sensores (ver abajo).
+
+## Instalación
+
+1. Ejecuta `TuringLite-Setup-1.0.0.exe`. Se instala para tu usuario, en `%LOCALAPPDATA%\Programs\TuringLite`.
+2. Elige las opciones:
+   - **Acceso directo** en el menú Inicio.
+   - **Iniciar con Windows**: entrada de tu usuario en el registro, sin privilegios.
+   - **Servicio de sensores** (recomendado): lee la temperatura de CPU al arrancar el equipo. Pide permiso de administrador una sola vez.
+3. Conecta la pantalla por USB. TuringLite la encuentra sola.
+
+## Servicio de sensores
+
+La temperatura y la potencia de la CPU solo se pueden leer con privilegios de administrador. Para no dar esos privilegios a la app, el servicio `TuringLiteSensors` lee los sensores como sistema y los comparte con la app por una tubería local de solo lectura. La app sigue sin privilegios.
+
+- El servicio se copia a `%ProgramFiles%\TuringLite`, donde solo un administrador puede modificarlo.
+- Sin servicio, la app funciona igual, pero la temperatura de CPU aparece como `--`.
+- Puedes instalarlo o quitarlo desde la ventana de TuringLite: **Instalar / Quitar servicio de sensores**.
+
+## Desinstalación
+
+Desde **Configuración → Aplicaciones instaladas → TuringLite → Desinstalar**, o ejecutando `TuringLite.exe --uninstall`.
+
+Se quita:
+- El programa (`%LOCALAPPDATA%\Programs\TuringLite`) y su acceso directo del menú Inicio.
+- El inicio con Windows y la entrada de Aplicaciones instaladas.
+- El servicio de sensores y su copia en `Program Files` (si lo instalaste; pide administrador).
+- Las huellas de Windows del usuario que apuntan a TuringLite (historial de ejecución, caché de nombres, mosaicos del menú Inicio).
+- Las huellas del sistema `Prefetch` de TuringLite (pide administrador en el mismo aviso UAC del servicio).
+
+Tu configuración (`config.json`) se borra salvo que marques **Conservar mi configuración**: en ese caso se guarda en `Documentos\TuringLite`.
+
+Un desinstalador nunca toca una copia de desarrollo ni otra instalación: solo borra lo que instaló el instalador (comprueba `install.marker`).
+
+Para desinstalar sin ventana: `TuringLite.exe --uninstall --silent` (opciones: `--keep-config`, `--keep-service`, `--keep-traces`).
+
+## Privacidad
+
+TuringLite no envía datos a ningún sitio. Lee sensores del equipo y los muestra en la pantalla. Sus archivos quedan en su carpeta de instalación.
+
+## Compilar el instalador
+
+```
+powershell -ExecutionPolicy Bypass -File release\build-release.ps1
+```
+
+Genera `dist\TuringLite-Setup-<versión>.exe` y `dist\SHA256SUMS.txt`. Requiere el SDK de .NET 8.
+
+## Limitaciones conocidas (1.0)
+
+- El ejecutable no está firmado digitalmente: Windows SmartScreen puede mostrar un aviso al ejecutarlo por primera vez.
+- Solo se ha probado con un Ryzen 9 7900X3D. Otros procesadores (Intel u otro AMD) pueden mostrar sensores distintos.
+- La pantalla física no se ha podido comprobar en todos los equipos.
