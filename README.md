@@ -52,7 +52,26 @@ TuringLite no envía datos a ningún sitio. Lee sensores del equipo y los muestr
 powershell -ExecutionPolicy Bypass -File release\build-release.ps1
 ```
 
-Genera `dist\TuringLite-Setup-<versión>.exe` y `dist\SHA256SUMS.txt`. Requiere el SDK de .NET 8.
+Genera `dist\TuringLite-Setup-<versión>.exe` (sin firmar) y `dist\SHA256SUMS.txt`. Requiere el SDK de .NET 8.
+Con `-Stage App` y `-Stage Setup` se hace por partes, para firmar la app antes de meterla en el instalador.
+
+Las versiones publicadas se compilan y firman en GitHub Actions (`.github/workflows/release.yml`) al subir una etiqueta `vX.Y.Z`.
+
+## Licencia
+
+TuringLite es software libre con licencia [GPL-3.0](LICENSE): puedes usarlo, estudiarlo, modificarlo y
+redistribuirlo, y quien distribuya una versión modificada debe publicar su código con la misma licencia.
+El protocolo de la pantalla se basa en [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python) (GPL-3.0).
+Las bibliotecas de terceros y sus licencias están en `THIRD-PARTY-NOTICES.md`.
+
+## Firma de código
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- Solo se firman los archivos de este proyecto: `TuringLite.exe`, `TuringLite.dll` y el instalador. Las bibliotecas de terceros se distribuyen tal como las publican sus autores (ver `THIRD-PARTY-NOTICES.md`).
+- Los binarios firmados se compilan en GitHub Actions a partir del código de este repositorio; nunca en un equipo personal.
+- Autor y aprobador de las firmas: Jazzware (mantenedor del repositorio).
+- Privacidad: TuringLite no envía datos a ningún sitio (ver Privacidad).
 
 ## Limitaciones conocidas (1.0)
 

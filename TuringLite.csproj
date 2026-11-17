@@ -40,5 +40,7 @@
     <EmbeddedResource Include="app.ico" LogicalName="app.ico" />
     <None Update="config.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="status.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Las licencias de terceros (MPL-2.0, Apache-2.0) piden acompañar el programa con sus avisos. -->
+    <None Update="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

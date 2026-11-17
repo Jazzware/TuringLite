@@ -1,0 +1,116 @@
+# Compila, firma con SignPath y publica el instalador de TuringLite.
+# Se lanza al subir una etiqueta vX.Y.Z (git tag v1.0.0 && git push origin v1.0.0) o a mano desde la pestaña Actions.
+#
+# Configuración (Settings -> Secrets and variables -> Actions), con los datos que da SignPath al aprobar el proyecto:
+#   secreto   SIGNPATH_API_TOKEN          token del usuario de CI de SignPath
+#   variable  SIGNPATH_ORGANIZATION_ID    id de la organización en SignPath
+#   variable  SIGNPATH_PROJECT_SLUG       p. ej. TuringLite
+#   variable  SIGNPATH_SIGNING_POLICY     p. ej. release-signing (test-signing mientras no haya certificado)
+# En SignPath, el proyecto necesita dos configuraciones de artefacto (Artifact configurations):
+#   app        zip con la app: firmar TuringLite.exe y TuringLite.dll (solo esos; las bibliotecas de terceros no)
+#   installer  zip con TuringLite-Setup-<versión>.exe: firmarlo
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # crear el release en GitHub
+  actions: read     # SignPath descarga los artefactos de esta ejecución
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publicar la app
+        shell: pwsh
+        run: ./release/build-release.ps1 -Stage App
+
+      - name: Subir la app sin firmar
+        id: app-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-unsigned
+          path: dist/app
+          if-no-files-found: error
+
+      - name: Firmar la app (SignPath)
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY }}
+          artifact-configuration-slug: app
+          github-artifact-id: ${{ steps.app-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: dist/app-signed
+
+      - name: Usar la app firmada para el instalador
+        shell: pwsh
+        run: |
+          Remove-Item dist/app -Recurse -Force
+          Move-Item dist/app-signed dist/app
+          foreach ($f in "dist/app/TuringLite.exe", "dist/app/TuringLite.dll") {
+            $s = Get-AuthenticodeSignature $f
+            if ($s.Status -ne "Valid") { throw "$f no quedó firmado: $($s.Status)" }
+            Write-Host "$f firmado por $($s.SignerCertificate.Subject)"
+          }
+
+      - name: Compilar el instalador
+        shell: pwsh
+        run: ./release/build-release.ps1 -Stage Setup
+
+      - name: Subir el instalador sin firmar
+        id: setup-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: setup-unsigned
+          path: dist/TuringLite-Setup-*.exe
+          if-no-files-found: error
+
+      - name: Firmar el instalador (SignPath)
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.setup-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: dist/signed
+
+      - name: Comprobar la firma y calcular sumas
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist/signed -Filter "TuringLite-Setup-*.exe" | Select-Object -First 1
+          if (-not $setup) { throw "SignPath no devolvió el instalador." }
+          $s = Get-AuthenticodeSignature $setup.FullName
+          if ($s.Status -ne "Valid") { throw "El instalador no quedó firmado: $($s.Status)" }
+          Write-Host "Instalador firmado por $($s.SignerCertificate.Subject)"
+          $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash
+          "$hash  $($setup.Name)" | Set-Content dist/signed/SHA256SUMS.txt -Encoding ascii
+          Write-Host "SHA-256: $hash"
+
+      - name: Guardar el instalador firmado
+        uses: actions/upload-artifact@v4
+        with:
+          name: TuringLite-Setup-signed
+          path: dist/signed/*
+
+      - name: Publicar el release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/signed/TuringLite-Setup-*.exe
+            dist/signed/SHA256SUMS.txt

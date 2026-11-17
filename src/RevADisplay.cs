@@ -7,7 +7,8 @@ public enum Orientation { Portrait = 0, ReversePortrait = 1, Landscape = 2, Reve
 
 /// <summary>
 /// Cliente del protocolo serie "Rev. A" (Turing Smart Screen 3.5", VID 1A86 / PID 5722).
-/// Protocolo tomado del proyecto open source turing-smart-screen-python (mathoudebine).
+/// Protocolo tomado del proyecto open source turing-smart-screen-python (mathoudebine), GPL-3.0:
+/// https://github.com/mathoudebine/turing-smart-screen-python. TuringLite se publica con la misma licencia.
 /// </summary>
 public sealed class RevADisplay : IDisposable
 {
