@@ -32,7 +32,8 @@ jobs:
       - name: No publicar sin firma
         if: startsWith(github.ref, 'refs/tags/v') && env.SIGNING != 'true'
         shell: pwsh
-        run: throw "Falta la configuración de SignPath: no se publica un release sin firmar."
+        run: |
+          throw "Falta la configuración de SignPath: no se publica un release sin firmar."
 
       - uses: actions/checkout@v4
 
