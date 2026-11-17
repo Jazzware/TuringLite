@@ -1,6 +1,9 @@
 # Compila, firma con SignPath y publica el instalador de TuringLite.
 # Se lanza al subir una etiqueta vX.Y.Z (git tag v1.0.0 && git push origin v1.0.0) o a mano desde la pestaña Actions.
 #
+# Sin la configuración de SignPath compila igualmente y guarda el instalador SIN FIRMAR como artefacto de la ejecución
+# (sirve para comprobar el build), pero nunca publica un release: con una etiqueta y sin firma, la ejecución falla.
+#
 # Configuración (Settings -> Secrets and variables -> Actions), con los datos que da SignPath al aprobar el proyecto:
 #   secreto   SIGNPATH_API_TOKEN          token del usuario de CI de SignPath
 #   variable  SIGNPATH_ORGANIZATION_ID    id de la organización en SignPath
@@ -23,7 +26,14 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      SIGNING: ${{ secrets.SIGNPATH_API_TOKEN != '' && 'true' || 'false' }}
     steps:
+      - name: No publicar sin firma
+        if: startsWith(github.ref, 'refs/tags/v') && env.SIGNING != 'true'
+        shell: pwsh
+        run: throw "Falta la configuración de SignPath: no se publica un release sin firmar."
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-dotnet@v4
@@ -43,6 +53,7 @@ jobs:
           if-no-files-found: error
 
       - name: Firmar la app (SignPath)
+        if: env.SIGNING == 'true'
         uses: signpath/github-action-submit-signing-request@v1
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -55,6 +66,7 @@ jobs:
           output-artifact-directory: dist/app-signed
 
       - name: Usar la app firmada para el instalador
+        if: env.SIGNING == 'true'
         shell: pwsh
         run: |
           Remove-Item dist/app -Recurse -Force
@@ -77,7 +89,16 @@ jobs:
           path: dist/TuringLite-Setup-*.exe
           if-no-files-found: error
 
+      - name: Aviso de build sin firmar
+        if: env.SIGNING != 'true'
+        shell: pwsh
+        run: |
+          $sum = Get-Content dist/SHA256SUMS.txt
+          "### Instalador SIN FIRMAR`n`nSignPath no está configurado: el artefacto ``setup-unsigned`` sirve solo para pruebas.`n`n``$sum``" |
+            Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
       - name: Firmar el instalador (SignPath)
+        if: env.SIGNING == 'true'
         uses: signpath/github-action-submit-signing-request@v1
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -90,6 +111,7 @@ jobs:
           output-artifact-directory: dist/signed
 
       - name: Comprobar la firma y calcular sumas
+        if: env.SIGNING == 'true'
         shell: pwsh
         run: |
           $setup = Get-ChildItem dist/signed -Filter "TuringLite-Setup-*.exe" | Select-Object -First 1
@@ -97,18 +119,20 @@ jobs:
           $s = Get-AuthenticodeSignature $setup.FullName
           if ($s.Status -ne "Valid") { throw "El instalador no quedó firmado: $($s.Status)" }
           Write-Host "Instalador firmado por $($s.SignerCertificate.Subject)"
+          Remove-Item dist/signed/SHA256SUMS.txt -ErrorAction SilentlyContinue
           $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash
           "$hash  $($setup.Name)" | Set-Content dist/signed/SHA256SUMS.txt -Encoding ascii
           Write-Host "SHA-256: $hash"
 
       - name: Guardar el instalador firmado
+        if: env.SIGNING == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: TuringLite-Setup-signed
           path: dist/signed/*
 
       - name: Publicar el release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: env.SIGNING == 'true' && startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
