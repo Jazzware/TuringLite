@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Drawing;
 
 namespace TuringLite.Setup;
@@ -5,13 +6,16 @@ namespace TuringLite.Setup;
 /// <summary>Ventana del instalador: qué instalar, progreso y resultado. La instalación corre fuera del hilo de la ventana.</summary>
 sealed class SetupForm : Form
 {
-    readonly TextBox _dir = new() { ReadOnly = true, Width = 400 };
+    // Sin TabStop: si no, al abrir recibe el foco y la ruta aparece seleccionada.
+    readonly TextBox _dir = new() { ReadOnly = true, Width = 400, TabStop = false };
     readonly CheckBox _shortcut = new() { Text = "Crear acceso directo en el menú Inicio", Checked = true, AutoSize = true };
     readonly CheckBox _autostart = new() { Text = "Iniciar TuringLite con Windows", Checked = true, AutoSize = true };
     readonly CheckBox _service = new()
     {
         Text = "Instalar el servicio de sensores (temperatura de CPU; pide permiso de administrador una vez)",
-        Checked = true, AutoSize = true,
+        // Tamaño fijo de dos líneas: en .NET Framework una casilla con AutoSize no parte el texto y lo corta.
+        Checked = true, AutoSize = false, Size = new Size(420, 40),
+        CheckAlign = ContentAlignment.TopLeft, TextAlign = ContentAlignment.TopLeft,
     };
     readonly CheckBox _launch = new() { Text = "Abrir TuringLite al terminar", Checked = true, AutoSize = true };
     readonly Label _status = new() { AutoSize = false, Size = new Size(400, 40) };
@@ -31,7 +35,7 @@ sealed class SetupForm : Form
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoScaleDimensions = new SizeF(96f, 96f);
         ClientSize = new Size(460, 410);
-        Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
         _dir.Text = Installer.DefaultDir;
         var title = new Label { Text = "Instalar TuringLite " + Installer.Version, AutoSize = true, Font = new Font("Segoe UI Semibold", 15f), Location = new Point(20, 16) };
@@ -45,7 +49,6 @@ sealed class SetupForm : Form
         _shortcut.Location = new Point(20, 162);
         _autostart.Location = new Point(20, 190);
         _service.Location = new Point(20, 218);
-        _service.MaximumSize = new Size(420, 0);
         _launch.Location = new Point(20, 262);
         _status.Location = new Point(20, 300);
         _progress.Location = new Point(20, 346);
@@ -63,6 +66,20 @@ sealed class SetupForm : Form
 
         Controls.AddRange(new Control[] { title, intro, folderLabel, _dir, _shortcut, _autostart, _service, _launch,
             _status, _progress, _install, _cancel });
+
+        // Sin .NET 8 Desktop Runtime la app no arranca: no se instala nada y se ofrece la página oficial.
+        if (!Installer.HasDesktopRuntime())
+        {
+            _status.Text = "Falta el .NET 8 Desktop Runtime (x64), necesario para TuringLite. " +
+                           "Instálalo y vuelve a abrir este instalador.";
+            _install.Enabled = false;
+            var download = new Button { Text = "Descargar .NET 8", Location = new Point(20, 362), Size = new Size(160, 30) };
+            download.Click += (_, _) =>
+            {
+                Process.Start(new ProcessStartInfo(Installer.RuntimeUrl) { UseShellExecute = true })?.Dispose();
+            };
+            Controls.Add(download);
+        }
     }
 
     async Task InstallAsync()

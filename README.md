@@ -5,7 +5,7 @@ Monitor de hardware para la mini pantalla USB Turing Smart Screen de 3,5". Muest
 ## Requisitos
 
 - Windows 10 (1809 o posterior) o Windows 11.
-- **.NET 8 Desktop Runtime** (x64): <https://dotnet.microsoft.com/download/dotnet/8.0>. El instalador no lo descarga.
+- **.NET 8 Desktop Runtime** (x64) para la app: <https://dotnet.microsoft.com/download/dotnet/8.0>. El instalador no lo necesita (usa .NET Framework 4.8, que ya viene con Windows) y comprueba que esté: si falta, no instala nada y te ofrece esa página. No lo descarga ni lo instala por ti.
 - Para la temperatura de CPU: el servicio de sensores (ver abajo).
 
 ## Instalación
@@ -57,5 +57,6 @@ Genera `dist\TuringLite-Setup-<versión>.exe` y `dist\SHA256SUMS.txt`. Requiere 
 ## Limitaciones conocidas (1.0)
 
 - El ejecutable no está firmado digitalmente: Windows SmartScreen puede mostrar un aviso al ejecutarlo por primera vez.
+- Por lo mismo, en equipos con **Smart App Control** activado Windows bloquea el instalador y no ofrece ejecutarlo igualmente. Solo se resuelve firmando el instalador y la app.
 - Solo se ha probado con un Ryzen 9 7900X3D. Otros procesadores (Intel u otro AMD) pueden mostrar sensores distintos.
 - La pantalla física no se ha podido comprobar en todos los equipos.

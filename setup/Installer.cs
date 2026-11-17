@@ -26,6 +26,22 @@ public static class Installer
     public static string ShortcutPath =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "TuringLite.lnk");
 
+    /// <summary>Página oficial de descarga del runtime que necesita TuringLite (WinForms en .NET 8, x64).</summary>
+    public const string RuntimeUrl = "https://dotnet.microsoft.com/download/dotnet/8.0";
+
+    /// <summary>
+    /// true si está instalado el .NET 8 Desktop Runtime (x64) que necesita la app: sus versiones viven en
+    /// shared\Microsoft.WindowsDesktop.App\8.x. El instalador corre en .NET Framework 4.8, así que esta comprobación
+    /// llega a ejecutarse también cuando falta. Solo lo comprueba; no lo descarga ni lo instala.
+    /// </summary>
+    public static bool HasDesktopRuntime()
+    {
+        var shared = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            "dotnet", "shared", "Microsoft.WindowsDesktop.App");
+        return Directory.Exists(shared)
+               && Directory.EnumerateDirectories(shared).Any(d => Path.GetFileName(d).StartsWith("8.", StringComparison.Ordinal));
+    }
+
     /// <summary>Instancias de TuringLite abiertas desde esta carpeta: no se puede reemplazar archivos en uso.</summary>
     public static bool AppRunningFrom(string dir)
     {
@@ -104,7 +120,7 @@ public static class Installer
         {
             // Algunos empaquetadores usan "\" en las rutas: se normaliza. Las carpetas no se extraen como archivo.
             var name = entry.FullName.Replace('\\', '/');
-            if (name.EndsWith('/') || entry.Name.Length == 0) continue;
+            if (name.EndsWith("/") || entry.Name.Length == 0) continue;
             var target = Path.GetFullPath(Path.Combine(root, name));
             if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("Ruta no válida en el paquete: " + name);

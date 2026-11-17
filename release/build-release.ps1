@@ -1,5 +1,6 @@
 # Genera el instalador de TuringLite para publicar.
-#   dist\TuringLite-Setup-<versión>.exe   instalador de un solo archivo (requiere .NET 8 Desktop Runtime)
+#   dist\TuringLite-Setup-<versión>.exe   instalador de un solo archivo (.NET Framework 4.8, incluido en Windows;
+#                                          comprueba que el equipo tenga el .NET 8 Desktop Runtime que usa la app)
 #   dist\SHA256SUMS.txt                   sumas de comprobación del instalador
 # Uso: powershell -ExecutionPolicy Bypass -File release\build-release.ps1
 $ErrorActionPreference = "Stop"
@@ -27,12 +28,13 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::CreateFromDirectory($app, $payload)
 
 Write-Host "3/4 Compilando el instalador (incluye el paquete)..."
-dotnet publish setup\TuringLite.Setup.csproj -c Release -r win-x64 --self-contained false `
-    -p:PublishSingleFile=true -o $dist
+# .NET Framework: el .exe compilado ya es un solo archivo (el paquete va dentro como recurso).
+$setupBuild = Join-Path $dist "setup-build"
+dotnet build setup\TuringLite.Setup.csproj -c Release -o $setupBuild
 if ($LASTEXITCODE -ne 0) { throw "La compilación del instalador falló." }
 $setup = Join-Path $dist "TuringLite-Setup-$version.exe"
-Move-Item (Join-Path $dist "TuringLite-Setup.exe") $setup -Force
-Remove-Item (Join-Path $dist "TuringLite-Setup.pdb") -ErrorAction SilentlyContinue
+Move-Item (Join-Path $setupBuild "TuringLite-Setup.exe") $setup -Force
+Remove-Item $setupBuild -Recurse -Force
 
 Write-Host "4/4 Limpiando y calculando sumas..."
 Remove-Item $app -Recurse -Force

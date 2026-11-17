@@ -5,14 +5,15 @@ static class Program
     /// <summary>
     /// Ventana por defecto. Con /silent instala sin ventana (para pruebas y despliegues):
     /// /dir=RUTA /shortcut=0|1 /autostart=0|1 /service=0|1 /launch=0|1.
-    /// Códigos de salida: 0 correcto, 1 error, 2 TuringLite está abierto desde esa carpeta.
+    /// Códigos de salida: 0 correcto, 1 error, 2 TuringLite está abierto desde esa carpeta,
+    /// 3 falta el .NET 8 Desktop Runtime (no se instala nada).
     /// </summary>
     [STAThread]
     static int Main(string[] args)
     {
         if (args.Contains("/silent", StringComparer.OrdinalIgnoreCase)) return RunSilent(args);
 
-        Application.SetHighDpiMode(HighDpiMode.SystemAware);
+        // El escalado de pantalla lo declara app.manifest.
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Application.Run(new SetupForm());
@@ -22,8 +23,9 @@ static class Program
     static int RunSilent(string[] args)
     {
         string Value(string name, string fallback) =>
-            args.FirstOrDefault(a => a.StartsWith("/" + name + "=", StringComparison.OrdinalIgnoreCase))?[(name.Length + 2)..] ?? fallback;
+            args.FirstOrDefault(a => a.StartsWith("/" + name + "=", StringComparison.OrdinalIgnoreCase))?.Substring(name.Length + 2) ?? fallback;
         bool Flag(string name, bool fallback) => Value(name, fallback ? "1" : "0") == "1";
+        if (!Installer.HasDesktopRuntime()) return 3;
 
         var options = new SetupOptions(
             InstallDir: Value("dir", Installer.DefaultDir),
