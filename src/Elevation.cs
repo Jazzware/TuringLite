@@ -42,15 +42,18 @@ static class Elevation
     /// Lanza esta app con permisos de administrador sin esperar a que termine. Devuelve false si el usuario
     /// cancela el aviso de UAC (en ese caso no se lanza nada).
     /// </summary>
-    public static bool StartElevated(string args)
+    public static bool StartElevated(string args) => StartElevated(Environment.ProcessPath!, args, AppContext.BaseDirectory);
+
+    /// <summary>Igual, pero con otro ejecutable (por ejemplo, una copia temporal de la app).</summary>
+    public static bool StartElevated(string exe, string args, string workingDirectory)
     {
         try
         {
-            Process.Start(new ProcessStartInfo(Environment.ProcessPath!, args)
+            Process.Start(new ProcessStartInfo(exe, args)
             {
                 UseShellExecute = true,
                 Verb = "runas",
-                WorkingDirectory = AppContext.BaseDirectory,
+                WorkingDirectory = workingDirectory,
             })?.Dispose();
             return true;
         }

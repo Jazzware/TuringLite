@@ -72,7 +72,14 @@ public static class Uninstaller
         if (removeService || o.CleanSystemTraces)
         {
             var args = "--elevated-cleanup --quiet --delay 120" + (removeService ? " --remove-service" : "") + (o.CleanSystemTraces ? " --prefetch" : "");
-            log.Add(Elevation.StartElevated(args)
+            // Corre desde una copia temporal: desde la carpeta de la app la tendría bloqueada mientras reintenta
+            // Prefetch (varios minutos) y el borrado de la carpeta podría rendirse antes de que termine.
+            var copy = TempCopy.Create(AppDir, "turinglite-elevado-");
+            bool started = copy != null
+                ? Elevation.StartElevated(Path.Combine(copy, "TuringLite.exe"), args + $" --temp-copy \"{copy}\"", copy)
+                : Elevation.StartElevated(args);
+            if (!started && copy != null) TempCopy.TryDelete(copy);
+            log.Add(started
                 ? "Servicio y huellas del sistema: se quitan en segundo plano con permiso de administrador."
                 : "Permiso de administrador cancelado: el servicio y las huellas del sistema no se han quitado.");
         }
@@ -314,8 +321,7 @@ public static class DelayedTraces
     {
         try
         {
-            var temp = Path.Combine(Path.GetTempPath(), "turinglite-trazas-" + Guid.NewGuid().ToString("N"));
-            CopyDirectory(appDir, temp);
+            var temp = TempCopy.Create(appDir, "turinglite-trazas-") ?? throw new IOException("sin copia temporal");
             var psi = new ProcessStartInfo(Path.Combine(temp, "TuringLite.exe"))
             {
                 UseShellExecute = false,
@@ -346,17 +352,33 @@ public static class DelayedTraces
         int seconds = int.TryParse(args[i + 4], out var s) ? Math.Clamp(s, 0, 600) : DelaySeconds;
         Thread.Sleep(TimeSpan.FromSeconds(seconds));
         Uninstaller.CleanUserTraces(Registry.CurrentUser, appDir, shortcut, new List<string>());
-        // Esta copia se borra cuando el proceso ya no la usa: la orden la ejecuta otro proceso, tras una pausa.
-        // Sin WorkingDirectory, cmd heredaría esta carpeta como directorio actual y rd no podría borrarla.
-        Process.Start(new ProcessStartInfo("cmd.exe", $"/c ping -n 4 127.0.0.1 >nul & rd /s /q \"{temp}\"")
+        TempCopy.RemoveSelfLater(temp);
+    }
+}
+
+/// <summary>
+/// Copias temporales de la app para el trabajo que sigue después de desinstalar (segunda pasada y limpieza elevada):
+/// así no se bloquea la carpeta de instalación, que se borra mientras tanto.
+/// </summary>
+public static class TempCopy
+{
+    /// <summary>Copia la carpeta de la app a %TEMP%\&lt;prefijo&gt;&lt;guid&gt;. Devuelve la ruta, o null si no se pudo.</summary>
+    public static string? Create(string source, string prefix)
+    {
+        var dest = Path.Combine(Path.GetTempPath(), prefix + Guid.NewGuid().ToString("N"));
+        try
         {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = Path.GetTempPath(),
-        })?.Dispose();
+            CopyDirectory(source, dest);
+            return dest;
+        }
+        catch (Exception)
+        {
+            TryDelete(dest);
+            return null;
+        }
     }
 
-    static void CopyDirectory(string source, string dest)
+    public static void CopyDirectory(string source, string dest)
     {
         Directory.CreateDirectory(dest);
         foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
@@ -364,6 +386,46 @@ public static class DelayedTraces
             var target = Path.Combine(dest, Path.GetRelativePath(source, file));
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             File.Copy(file, target, overwrite: true);
+        }
+    }
+
+    public static void TryDelete(string dir)
+    {
+        try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
+        catch (Exception) { /* queda en %TEMP%; Windows lo limpia */ }
+    }
+
+    /// <summary>
+    /// Borra, poco después de que termine este proceso, la carpeta desde la que se está ejecutando. Solo esa: aunque
+    /// la ruta llegue por argumentos, nunca se borra otra (importante cuando el proceso corre como administrador).
+    /// </summary>
+    public static bool RemoveSelfLater(string dir)
+    {
+        if (!IsOwnFolder(dir, AppContext.BaseDirectory)) return false;
+        // Sin WorkingDirectory, cmd heredaría esta carpeta como directorio actual y rd no podría borrarla.
+        Process.Start(new ProcessStartInfo("cmd.exe", $"/c ping -n 4 127.0.0.1 >nul & rd /s /q \"{Path.GetFullPath(dir)}\"")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = Path.GetTempPath(),
+        })?.Dispose();
+        return true;
+    }
+
+    /// <summary>true si <paramref name="dir"/> es exactamente <paramref name="baseDir"/> y está dentro de %TEMP%.</summary>
+    public static bool IsOwnFolder(string dir, string baseDir)
+    {
+        try
+        {
+            var a = Path.GetFullPath(dir).TrimEnd(Path.DirectorySeparatorChar);
+            var b = Path.GetFullPath(baseDir).TrimEnd(Path.DirectorySeparatorChar);
+            var temp = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            return string.Equals(a, b, StringComparison.OrdinalIgnoreCase)
+                   && a.StartsWith(temp, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 }
@@ -388,6 +450,9 @@ public static class SystemCleanup
                 attempts: 12, pause: TimeSpan.FromSeconds(30));
             if (left > 0 && code == 0) code = 3;
         }
+        // Corre desde una copia en %TEMP% (ver Uninstaller.Run): se borra al terminar.
+        int t = Array.IndexOf(args, "--temp-copy");
+        if (t >= 0 && t + 1 < args.Length) TempCopy.RemoveSelfLater(args[t + 1]);
         return code;
     }
 
