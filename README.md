@@ -64,13 +64,20 @@ redistribuirlo, y quien distribuya una versión modificada debe publicar su cód
 El protocolo de la pantalla se basa en [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python) (GPL-3.0).
 Las bibliotecas de terceros y sus licencias están en `THIRD-PARTY-NOTICES.md`.
 
-## Firma de código
+## Code signing policy
 
 Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
 
+Team roles:
+- Committers and reviewers: [Jazzware](https://github.com/Jazzware) (repository owner). Every change from outside contributors (pull requests) is reviewed before it is merged.
+- Approvers: [Jazzware](https://github.com/Jazzware). Every signing request is approved manually.
+
+Privacy policy: this program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
+
+Política de firma (en español):
 - Solo se firman los archivos de este proyecto: `TuringLite.exe`, `TuringLite.dll` y el instalador. Las bibliotecas de terceros se distribuyen tal como las publican sus autores (ver `THIRD-PARTY-NOTICES.md`).
 - Los binarios firmados se compilan en GitHub Actions a partir del código de este repositorio; nunca en un equipo personal.
-- Autor y aprobador de las firmas: Jazzware (mantenedor del repositorio).
+- Cada firma la aprueba a mano el mantenedor (Jazzware).
 - Privacidad: TuringLite no envía datos a ningún sitio (ver Privacidad).
 
 ## Limitaciones conocidas (1.0)
