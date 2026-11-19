@@ -10,7 +10,7 @@ Monitor de hardware para la mini pantalla USB Turing Smart Screen de 3,5". Muest
 
 ## Instalación
 
-1. Ejecuta `TuringLite-Setup-1.0.0.exe`. Se instala para tu usuario, en `%LOCALAPPDATA%\Programs\TuringLite`.
+1. Descarga `TuringLite-Setup-1.0.0.exe` de [Releases](https://github.com/Jazzware/TuringLite/releases) y ejecútalo. Se instala para tu usuario, en `%LOCALAPPDATA%\Programs\TuringLite`.
 2. Elige las opciones:
    - **Acceso directo** en el menú Inicio.
    - **Iniciar con Windows**: entrada de tu usuario en el registro, sin privilegios.
@@ -55,7 +55,7 @@ powershell -ExecutionPolicy Bypass -File release\build-release.ps1
 Genera `dist\TuringLite-Setup-<versión>.exe` (sin firmar) y `dist\SHA256SUMS.txt`. Requiere el SDK de .NET 8.
 Con `-Stage App` y `-Stage Setup` se hace por partes, para firmar la app antes de meterla en el instalador.
 
-Las versiones publicadas se compilan y firman en GitHub Actions (`.github/workflows/release.yml`) al subir una etiqueta `vX.Y.Z`.
+Las versiones publicadas se compilan en GitHub Actions (`.github/workflows/release.yml`) al subir una etiqueta `vX.Y.Z`.
 
 ## Licencia
 
@@ -64,21 +64,13 @@ redistribuirlo, y quien distribuya una versión modificada debe publicar su cód
 El protocolo de la pantalla se basa en [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python) (GPL-3.0).
 Las bibliotecas de terceros y sus licencias están en `THIRD-PARTY-NOTICES.md`.
 
-## Code signing policy
+## Firma de código
 
-Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+La versión 1.0.0 **no está firmada**. Estamos tramitando un certificado de firma de código para las próximas versiones.
 
-Team roles:
-- Committers and reviewers: [Jazzware](https://github.com/Jazzware) (repository owner). Every change from outside contributors (pull requests) is reviewed before it is merged.
-- Approvers: [Jazzware](https://github.com/Jazzware). Every signing request is approved manually.
-
-Privacy policy: this program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
-
-Política de firma (en español):
-- Solo se firman los archivos de este proyecto: `TuringLite.exe`, `TuringLite.dll` y el instalador. Las bibliotecas de terceros se distribuyen tal como las publican sus autores (ver `THIRD-PARTY-NOTICES.md`).
-- Los binarios firmados se compilan en GitHub Actions a partir del código de este repositorio; nunca en un equipo personal.
-- Cada firma la aprueba a mano el mantenedor (Jazzware).
-- Privacidad: TuringLite no envía datos a ningún sitio (ver Privacidad).
+Cuando esté:
+- Solo se firmarán los archivos de este proyecto: `TuringLite.exe`, `TuringLite.dll` y el instalador. Las bibliotecas de terceros se distribuyen tal como las publican sus autores (ver `THIRD-PARTY-NOTICES.md`).
+- Cada versión publicada incluirá `SHA256SUMS.txt` para comprobar la descarga.
 
 ## Limitaciones conocidas (1.0)
 
