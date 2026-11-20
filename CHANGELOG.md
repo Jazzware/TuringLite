@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2
+
+- Sensor nuevo «PC · Potencia total (CPU + GPU)»: suma la potencia del procesador y la de la GPU dedicada
+  (la integrada no se suma, su consumo ya va dentro del procesador).
+- Opcional en ese sensor: watts extra estimados (placa, RAM, discos, ventiladores) y eficiencia de la fuente
+  para aproximar el consumo desde el enchufe. Con estimación, el valor se muestra con «~».
+- El editor de componentes es un poco más alto para los nuevos campos.
+
 ## 1.0.1
 
 - Editor de componentes: botón «Restablecer por defecto», que vuelve al diseño de fábrica para la orientación actual.
