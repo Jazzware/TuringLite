@@ -17,7 +17,7 @@
     <RootNamespace>TuringLite.Setup</RootNamespace>
     <ApplicationIcon>..\app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Product>TuringLite</Product>
     <Description>Instalador de TuringLite</Description>
     <Copyright>Copyright © 2026 TuringLite</Copyright>

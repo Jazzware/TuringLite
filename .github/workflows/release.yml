@@ -4,7 +4,7 @@
 # Con etiqueta: publica un release en GitHub con el instalador y SHA256SUMS.txt.
 # A mano: solo compila y guarda el instalador como artefacto de la ejecución.
 #
-# La 1.0.0 se publica SIN FIRMAR. La firma con certificado (Certum) se añadirá aquí cuando esté disponible.
+# Las versiones se publican SIN FIRMAR.
 name: release
 
 on:

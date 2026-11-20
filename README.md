@@ -10,7 +10,7 @@ Monitor de hardware para la mini pantalla USB Turing Smart Screen de 3,5". Muest
 
 ## Instalación
 
-1. Descarga `TuringLite-Setup-1.0.0.exe` de [Releases](https://github.com/Jazzware/TuringLite/releases) y ejecútalo. Se instala para tu usuario, en `%LOCALAPPDATA%\Programs\TuringLite`.
+1. Descarga `TuringLite-Setup-<versión>.exe` de [Releases](https://github.com/Jazzware/TuringLite/releases) y ejecútalo. Se instala para tu usuario, en `%LOCALAPPDATA%\Programs\TuringLite`.
 2. Elige las opciones:
    - **Acceso directo** en el menú Inicio.
    - **Iniciar con Windows**: entrada de tu usuario en el registro, sin privilegios.
@@ -66,11 +66,8 @@ Las bibliotecas de terceros y sus licencias están en `THIRD-PARTY-NOTICES.md`.
 
 ## Firma de código
 
-La versión 1.0.0 **no está firmada**. Estamos tramitando un certificado de firma de código para las próximas versiones.
-
-Cuando esté:
-- Solo se firmarán los archivos de este proyecto: `TuringLite.exe`, `TuringLite.dll` y el instalador. Las bibliotecas de terceros se distribuyen tal como las publican sus autores (ver `THIRD-PARTY-NOTICES.md`).
-- Cada versión publicada incluirá `SHA256SUMS.txt` para comprobar la descarga.
+Las versiones publicadas **no están firmadas digitalmente**. Cada una incluye `SHA256SUMS.txt` para comprobar la descarga.
+Los antivirus que puntúan por reputación (p. ej. Norton) pueden marcar el instalador o la app por ser nuevos y sin firma.
 
 ## Limitaciones conocidas (1.0)
 

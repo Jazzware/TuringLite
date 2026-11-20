@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Editor de componentes: botón «Restablecer por defecto», que vuelve al diseño de fábrica para la orientación actual.
+- Editor de componentes: casilla «Bloquear posición y tamaño» por componente, para no moverlo sin querer.
+- Ventana principal: la GPU se elige en una lista con las tarjetas detectadas («Automática» elige la dedicada).
+- Ventana principal más compacta: sin el subtítulo ni la descripción del tema.
+
 ## 1.0.0
 
 Primera versión publicable.
