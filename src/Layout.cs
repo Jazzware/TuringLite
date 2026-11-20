@@ -18,6 +18,9 @@ static class DisplayLayout
         ("Minimalista (reloj + temperaturas)", Minimal),
     };
 
+    /// <summary>Diseño por defecto: el mismo que trae un config.json recién instalado.</summary>
+    public static List<WidgetConfig> Default(Size s) => FullPanel(s);
+
     static List<WidgetConfig> FullPanel(Size s)
     {
         var list = Header(s, withText: true);

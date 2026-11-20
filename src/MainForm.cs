@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Drawing;
+using LibreHardwareMonitor.Hardware;
 
 namespace TuringLite;
 
@@ -25,9 +26,9 @@ sealed class MainForm : Form
     readonly Label _brightnessValue = new() { AutoSize = false, TextAlign = ContentAlignment.MiddleRight };
     readonly ComboBox _orientation = new() { DropDownStyle = ComboBoxStyle.DropDownList };
     readonly ComboBox _theme = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    readonly Label _themeHint = new() { AutoSize = false, Font = Ui.SmallFont, ForeColor = Ui.Dim };
     readonly NumericUpDown _interval = new() { Minimum = 500, Maximum = 10000, Increment = 250 };
-    readonly TextBox _gpu = new() { PlaceholderText = "automático" };
+    readonly ComboBox _gpu = new() { DropDownStyle = ComboBoxStyle.DropDownList, DropDownWidth = 320 };
+    const string GpuAuto = "Automática";
     readonly CheckBox _autostart = new() { Text = "Iniciar con Windows", AutoSize = true };
     readonly ListView _components = new() { View = View.Details, FullRowSelect = true, HideSelection = false };
     readonly System.Windows.Forms.Timer _timer = new() { Interval = 2000 };
@@ -44,19 +45,17 @@ sealed class MainForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoScaleDimensions = new SizeF(96f, 96f);
-        ClientSize = new Size(500, 684);
+        ClientSize = new Size(500, 662);
 
         // --- Cabecera y estado ---
         Controls.Add(Ui.MakeLabel("TuringLite", 20, 14, font: Ui.TitleFont));
-        Controls.Add(Ui.MakeLabel("Monitor de hardware para la pantalla USB · al cerrar, sigue en la bandeja", 20, 46,
-            dim: true, font: Ui.SmallFont));
         _pause = Ui.MakeButton("Pausar", 360, 18, 120, 32, false, () => _tray.TogglePause());
         Controls.Add(_pause);
         _status.SetBounds(20, 74, 460, 20);
         Controls.Add(_status);
 
         // --- Pantalla: brillo, orientación, tema, intervalo ---
-        var screen = Ui.MakeCard(20, 104, 460, 260, "Pantalla");
+        var screen = Ui.MakeCard(20, 104, 460, 238, "Pantalla");
         screen.Controls.Add(Ui.MakeLabel("Brillo", 16, 52));
         _brightness.SetBounds(96, 42, 290, 40);
         _brightnessValue.SetBounds(394, 52, 50, 20);
@@ -76,30 +75,26 @@ sealed class MainForm : Form
         screen.Controls.Add(Ui.MakeLabel("Tema", 16, 130));
         _theme.SetBounds(96, 126, 348, 26);
         foreach (var t in Themes.All) _theme.Items.Add(t.Name);
-        _theme.SelectedIndexChanged += (_, _) =>
-        {
-            if (_theme.SelectedIndex >= 0) _themeHint.Text = Themes.All[_theme.SelectedIndex].Description;
-        };
         screen.Controls.Add(_theme);
-        _themeHint.SetBounds(96, 156, 348, 18);
-        screen.Controls.Add(_themeHint);
 
-        screen.Controls.Add(Ui.MakeLabel("Intervalo", 16, 188));
-        _interval.SetBounds(96, 184, 90, 26);
+        screen.Controls.Add(Ui.MakeLabel("Intervalo", 16, 166));
+        _interval.SetBounds(96, 162, 90, 26);
         screen.Controls.Add(_interval);
-        screen.Controls.Add(Ui.MakeLabel("ms", 192, 188, dim: true));
-        screen.Controls.Add(Ui.MakeLabel("GPU", 236, 188));
-        _gpu.SetBounds(278, 184, 166, 26);
+        screen.Controls.Add(Ui.MakeLabel("ms", 192, 166, dim: true));
+        screen.Controls.Add(Ui.MakeLabel("GPU", 236, 166));
+        _gpu.SetBounds(278, 162, 166, 26);
+        // Las GPU se leen al abrir la lista: al mostrar la ventana los sensores pueden no estar listos todavía.
+        _gpu.DropDown += (_, _) => FillGpus(SelectedGpu());
         screen.Controls.Add(_gpu);
 
-        _autostart.Location = new Point(16, 226);
+        _autostart.Location = new Point(16, 204);
         screen.Controls.Add(_autostart);
-        var save = Ui.MakeButton("Guardar y aplicar", 296, 220, 148, 30, true, () => Save());
+        var save = Ui.MakeButton("Guardar y aplicar", 296, 198, 148, 30, true, () => Save());
         screen.Controls.Add(save);
         Controls.Add(screen);
 
         // --- Componentes: lista con el valor actual ---
-        var components = Ui.MakeCard(20, 372, 460, 140, "Componentes");
+        var components = Ui.MakeCard(20, 350, 460, 140, "Componentes");
         components.Controls.Add(Ui.MakeLabel("Doble clic para editar", 248, 14, dim: true, font: Ui.SmallFont));
         _components.SetBounds(12, 38, 436, 90);
         _components.Columns.Add("Componente", 250);
@@ -109,18 +104,18 @@ sealed class MainForm : Form
         Controls.Add(components);
 
         // --- Acciones ---
-        AddButton("Editar componentes…", 20, 524, 460, 34, primary: true, OpenComponentsEditor);
-        AddButton("Editar texto (status.txt)", 20, 566, 224, 30, primary: false, () => OpenInNotepad(StatusFilePath()));
-        AddButton("Editar config.json (avanzado)", 256, 566, 224, 30, primary: false, () => OpenInNotepad(_svc.ConfigPath));
-        AddButton("Ver todos los sensores", 20, 602, 224, 30, primary: false, ShowAllSensors);
-        AddButton("Patrón de prueba", 256, 602, 224, 30, primary: false, () =>
+        AddButton("Editar componentes…", 20, 502, 460, 34, primary: true, OpenComponentsEditor);
+        AddButton("Editar texto (status.txt)", 20, 544, 224, 30, primary: false, () => OpenInNotepad(StatusFilePath()));
+        AddButton("Editar config.json (avanzado)", 256, 544, 224, 30, primary: false, () => OpenInNotepad(_svc.ConfigPath));
+        AddButton("Ver todos los sensores", 20, 580, 224, 30, primary: false, ShowAllSensors);
+        AddButton("Patrón de prueba", 256, 580, 224, 30, primary: false, () =>
         {
             if (MessageBox.Show("Se detendrá el monitoreo y se dibujarán filas de prueba con distintos anchos. " +
                                 "Toma una foto de la pantalla y pulsa Reanudar para volver.",
                                 "Patrón de prueba", MessageBoxButtons.OKCancel, MessageBoxIcon.Information) == DialogResult.OK)
                 _svc.RunTestPattern();
         });
-        _service = Ui.MakeButton("Instalar servicio de sensores…", 20, 642, 460, 30, false, OnServiceClick);
+        _service = Ui.MakeButton("Instalar servicio de sensores…", 20, 620, 460, 30, false, OnServiceClick);
         Controls.Add(_service);
 
         LoadValues();
@@ -150,9 +145,38 @@ sealed class MainForm : Form
         _orientation.SelectedIndex = idx < 0 ? 0 : idx;
         _theme.SelectedIndex = Themes.IndexOf(c.Theme);
         _interval.Value = Math.Clamp(c.IntervalMs, (int)_interval.Minimum, (int)_interval.Maximum);
-        _gpu.Text = c.Gpu;
+        FillGpus(c.Gpu);
         try { _autostart.Checked = AutoStart.IsEnabled(); } catch { _autostart.Enabled = false; }
     }
+
+    /// <summary>
+    /// Llena la lista de GPU con las que detectan los sensores. «Automática» guarda un filtro vacío (elige la
+    /// dedicada). Un valor guardado que ya no se detecta se conserva para no perderlo al guardar otros ajustes.
+    /// </summary>
+    void FillGpus(string selected)
+    {
+        selected = selected.Trim();
+        var names = (_svc.Sensors?.Catalog() ?? new List<SensorInfo>())
+            .Where(i => i.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel)
+            .Select(i => i.HardwareName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (selected.Length > 0 && !names.Any(n => n.Equals(selected, StringComparison.OrdinalIgnoreCase)))
+            names.Add(selected);
+
+        _gpu.BeginUpdate();
+        _gpu.Items.Clear();
+        _gpu.Items.Add(GpuAuto);
+        foreach (var n in names) _gpu.Items.Add(n);
+        int idx = selected.Length == 0 ? 0 : _gpu.Items.Cast<string>().ToList()
+            .FindIndex(n => n.Equals(selected, StringComparison.OrdinalIgnoreCase));
+        _gpu.SelectedIndex = Math.Max(0, idx);
+        _gpu.EndUpdate();
+    }
+
+    /// <summary>Filtro de GPU para config.json: vacío = automática.</summary>
+    string SelectedGpu() => _gpu.SelectedIndex <= 0 ? "" : (string)_gpu.SelectedItem!;
 
     public void RefreshStatus()
     {
@@ -273,7 +297,7 @@ sealed class MainForm : Form
         c.Orientation = Orientations[Math.Max(0, _orientation.SelectedIndex)].Key;
         c.Theme = Themes.All[Math.Max(0, _theme.SelectedIndex)].Key;
         c.IntervalMs = (int)_interval.Value;
-        c.Gpu = _gpu.Text.Trim();
+        c.Gpu = SelectedGpu();
 
         bool wantAuto = _autostart.Checked;
         bool hasAuto = AutoStart.IsEnabled();

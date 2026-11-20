@@ -59,6 +59,7 @@ sealed class ComponentsForm : Form
     // --- Propiedades comunes ---
     readonly Label _typeLabel = new() { Location = new Point(0, 0), AutoSize = true, Font = Ui.SectionFont, ForeColor = Ui.Accent };
     readonly CheckBox _enabled = new() { Location = new Point(0, 40), Text = "Mostrar en pantalla", AutoSize = true };
+    readonly CheckBox _locked = new() { Location = new Point(0, 474), Text = "Bloquear posición y tamaño", AutoSize = true };
     readonly NumericUpDown _font = Num(0, 200, 0, 326, 90);
     readonly NumericUpDown _x = Num(0, 10000, 0, 400, 90), _y = Num(0, 10000, 110, 400, 90);
     readonly NumericUpDown _w = Num(10, 10000, 0, 448, 90), _h = Num(10, 10000, 110, 448, 90);
@@ -152,6 +153,7 @@ sealed class ComponentsForm : Form
         _templateBox.SelectedIndex = 0;
         Controls.Add(_templateBox);
         Btn("Aplicar plantilla", 322, 54, 128, ApplyTemplate);
+        Btn("Restablecer por defecto", 456, 54, 170, ResetToDefault);
 
         Controls.Add(Ui.MakeLabel("Tema", 920, 61, dim: true));
         Quiet(() =>
@@ -195,6 +197,13 @@ sealed class ComponentsForm : Form
         p.Controls.Add(_typeLabel);
         p.Controls.Add(_enabled);
         _enabled.CheckedChanged += (_, _) => Edit(c => c.Enabled = _enabled.Checked);
+        p.Controls.Add(_locked);
+        _locked.CheckedChanged += (_, _) =>
+        {
+            Edit(c => c.Locked = _locked.Checked);
+            UpdateGeometryLock();
+            _canvas.Invalidate();
+        };
 
         // Sensor
         _gSensor.Controls.Add(Lbl("Sensor", 0, 0));
@@ -388,6 +397,8 @@ sealed class ComponentsForm : Form
             _gClock.Visible = c.Type == "clock";
             _gText.Visible = c.Type == "text";
             _enabled.Checked = c.Enabled;
+            _locked.Checked = c.Locked;
+            UpdateGeometryLock();
 
             switch (c.Type)
             {
@@ -441,6 +452,13 @@ sealed class ComponentsForm : Form
             SetNum(_w, c.W);
             SetNum(_h, c.H);
         });
+    }
+
+    /// <summary>Con la posición bloqueada, X, Y, ancho y alto no se pueden cambiar (tampoco desde la vista previa).</summary>
+    void UpdateGeometryLock()
+    {
+        bool free = _sel is not { Cfg.Locked: true };
+        foreach (var n in new[] { _x, _y, _w, _h }) n.Enabled = free;
     }
 
     static void SetNum(NumericUpDown n, double v) => n.Value = (decimal)Math.Clamp(v, (double)n.Minimum, (double)n.Maximum);
@@ -599,12 +617,22 @@ sealed class ComponentsForm : Form
     void ApplyTemplate()
     {
         if (_templateBox.SelectedIndex < 0) return;
-        var r = MessageBox.Show(this,
-            "Se reemplazarán todos los componentes por la plantilla. Si cambias de idea, usa «Cancelar» para descartar.",
-            "Plantilla", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
+        ReplaceAll(DisplayLayout.Templates[_templateBox.SelectedIndex].Build, "Plantilla",
+            "Se reemplazarán todos los componentes por la plantilla. Si cambias de idea, usa «Cancelar» para descartar.");
+    }
+
+    /// <summary>Vuelve al diseño de fábrica (el de un config.json recién instalado), adaptado a la orientación actual.</summary>
+    void ResetToDefault() =>
+        ReplaceAll(DisplayLayout.Default, "Restablecer por defecto",
+            "Se reemplazarán todos los componentes por el diseño por defecto. El tema no cambia. " +
+            "Si cambias de idea, usa «Cancelar» para descartar.");
+
+    void ReplaceAll(Func<Size, List<WidgetConfig>> build, string title, string question)
+    {
+        var r = MessageBox.Show(this, question, title, MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
         if (r != DialogResult.OK) return;
 
-        var configs = DisplayLayout.Templates[_templateBox.SelectedIndex].Build(_canvas.Logical);
+        var configs = build(_canvas.Logical);
         foreach (var it in _items) it.Visual.Dispose();
         _items.Clear();
         foreach (var c in configs) _items.Add(new Item(c, _look));

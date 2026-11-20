@@ -9,6 +9,7 @@ public sealed class WidgetConfig
 {
     public string Type { get; set; } = "sensor";   // sensor | clock | text
     public bool Enabled { get; set; } = true;       // false = configurado pero oculto
+    public bool Locked { get; set; }                // true = el editor no deja moverlo ni cambiar su tamaño
     public int X { get; set; }
     public int Y { get; set; }
     public int W { get; set; } = 300;

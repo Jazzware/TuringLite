@@ -112,7 +112,7 @@ sealed class LayoutCanvas : Control
         if (e.Button != MouseButtons.Left) return;
 
         // El asa del componente seleccionado tiene prioridad sobre el cuerpo.
-        if (_selected != null && HandleRect(_selected).Contains(e.Location))
+        if (_selected is { Locked: false } && HandleRect(_selected).Contains(e.Location))
         {
             _resizing = true;
             Capture = true;
@@ -121,7 +121,7 @@ sealed class LayoutCanvas : Control
 
         var p = ToLogical(e.Location);
         var hit = HitTest(p);
-        if (hit != null)
+        if (hit is { Locked: false })
         {
             _moving = true;
             Capture = true;
@@ -155,6 +155,10 @@ sealed class LayoutCanvas : Control
             c.Y = Fit((int)p.Y - _grab.Y, 0, Logical.Height - c.H);
             GeometryChanged?.Invoke();
         }
+        else if (c.Locked)
+        {
+            Cursor = Cursors.Default;
+        }
         else
         {
             Cursor = HandleRect(c).Contains(e.Location) ? Cursors.SizeNWSE
@@ -178,7 +182,7 @@ sealed class LayoutCanvas : Control
         base.OnKeyDown(e);
         if (e.KeyCode == Keys.Delete) { DeleteRequested?.Invoke(); e.Handled = true; return; }
         var c = _selected;
-        if (c == null) return;
+        if (c == null || c.Locked) return;
         int step = e.Shift ? 10 : 1, dx = 0, dy = 0;
         switch (e.KeyCode)
         {
@@ -222,11 +226,15 @@ sealed class LayoutCanvas : Control
             var r = ToScreen(_selected);
             using (var pen = new Pen(Accent, 2))
                 g.DrawRectangle(pen, r.X, r.Y, r.Width, r.Height);
-            var h = HandleRect(_selected);
-            g.FillRectangle(Brushes.White, h);
-            // El asa es blanca para verse sobre cualquier fondo de tema.
-            using var hp = new Pen(Accent);
-            g.DrawRectangle(hp, h.X, h.Y, h.Width - 1, h.Height - 1);
+            // Bloqueado: sin asa de tamaño, para que se vea que no se puede mover.
+            if (!_selected.Locked)
+            {
+                var h = HandleRect(_selected);
+                g.FillRectangle(Brushes.White, h);
+                // El asa es blanca para verse sobre cualquier fondo de tema.
+                using var hp = new Pen(Accent);
+                g.DrawRectangle(hp, h.X, h.Y, h.Width - 1, h.Height - 1);
+            }
         }
 
         if (Focused)
