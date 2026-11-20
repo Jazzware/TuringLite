@@ -27,6 +27,9 @@ public sealed class WidgetConfig
     public string Text { get; set; } = "";          // text estático
     public string File { get; set; } = "";          // text desde archivo (se relee solo si cambia)
     public float FontSize { get; set; } = 0;        // 0 = automático
+    // Solo para el sensor "pc.power" (Total Power): estimación del resto del equipo y de la fuente.
+    public int ExtraWatts { get; set; }             // W fijos que se suman (placa, RAM, discos, ventiladores...)
+    public int PsuEfficiency { get; set; }          // % de eficiencia de la fuente (0 = no se aplica)
 
     public WidgetConfig Clone() => (WidgetConfig)MemberwiseClone();
 
@@ -41,6 +44,8 @@ public sealed class WidgetConfig
         Y = Math.Clamp(Y, 0, screen.Height - H);
         FontSize = Math.Clamp(FontSize, 0f, 200f);
         Decimals = Math.Clamp(Decimals, 0, 3);
+        ExtraWatts = Math.Clamp(ExtraWatts, 0, 2000);
+        PsuEfficiency = PsuEfficiency <= 0 ? 0 : Math.Clamp(PsuEfficiency, 50, 100);
         if (!(Max > 0)) Max = 100;           // también cubre NaN
         Label ??= "";
         Sensor ??= "";

@@ -39,13 +39,13 @@ sealed class ComponentsForm : Form
 
     readonly ListView _list = new()
     {
-        Location = new Point(12, 96), Size = new Size(300, 520),
+        Location = new Point(12, 96), Size = new Size(300, 570),
         View = View.Details, CheckBoxes = true, FullRowSelect = true, HideSelection = false, MultiSelect = false,
     };
     readonly Label _caption = new() { Location = new Point(326, 98), Size = new Size(546, 18), AutoSize = false, Font = Ui.SmallFont, ForeColor = Ui.Dim };
-    readonly LayoutCanvas _canvas = new() { Location = new Point(326, 118), Size = new Size(546, 498) };
+    readonly LayoutCanvas _canvas = new() { Location = new Point(326, 118), Size = new Size(546, 548) };
     readonly Panel _props;
-    readonly Panel _propsInner = new() { Location = new Point(14, 14), Size = new Size(272, 492), BackColor = Ui.Surface };
+    readonly Panel _propsInner = new() { Location = new Point(14, 14), Size = new Size(272, 542), BackColor = Ui.Surface };
     readonly Label _empty = new()
     {
         Location = new Point(14, 14), Size = new Size(272, 40), AutoSize = false, ForeColor = Ui.Dim,
@@ -53,25 +53,28 @@ sealed class ComponentsForm : Form
     };
     readonly ComboBox _templateBox = new() { Location = new Point(74, 56), Size = new Size(240, 26), DropDownStyle = ComboBoxStyle.DropDownList };
     readonly ComboBox _themeBox = new() { Location = new Point(968, 56), Size = new Size(220, 26), DropDownStyle = ComboBoxStyle.DropDownList };
-    readonly Label _status = new() { Location = new Point(12, 632), Size = new Size(900, 20), AutoSize = false, ForeColor = Ui.Dim };
+    readonly Label _status = new() { Location = new Point(12, 682), Size = new Size(900, 20), AutoSize = false, ForeColor = Ui.Dim };
     readonly System.Windows.Forms.Timer _timer = new() { Interval = 1000 };
 
     // --- Propiedades comunes ---
     readonly Label _typeLabel = new() { Location = new Point(0, 0), AutoSize = true, Font = Ui.SectionFont, ForeColor = Ui.Accent };
     readonly CheckBox _enabled = new() { Location = new Point(0, 40), Text = "Mostrar en pantalla", AutoSize = true };
-    readonly CheckBox _locked = new() { Location = new Point(0, 474), Text = "Bloquear posición y tamaño", AutoSize = true };
-    readonly NumericUpDown _font = Num(0, 200, 0, 326, 90);
-    readonly NumericUpDown _x = Num(0, 10000, 0, 400, 90), _y = Num(0, 10000, 110, 400, 90);
-    readonly NumericUpDown _w = Num(10, 10000, 0, 448, 90), _h = Num(10, 10000, 110, 448, 90);
+    readonly CheckBox _locked = new() { Location = new Point(0, 524), Text = "Bloquear posición y tamaño", AutoSize = true };
+    readonly NumericUpDown _font = Num(0, 200, 0, 376, 90);
+    readonly NumericUpDown _x = Num(0, 10000, 0, 450, 90), _y = Num(0, 10000, 110, 450, 90);
+    readonly NumericUpDown _w = Num(10, 10000, 0, 498, 90), _h = Num(10, 10000, 110, 498, 90);
 
     // --- Grupo: sensor ---
-    readonly Panel _gSensor = new() { Location = new Point(0, 60), Size = new Size(272, 240) };
+    readonly Panel _gSensor = new() { Location = new Point(0, 60), Size = new Size(272, 290) };
     readonly ComboBox _sensorBox = new() { Location = new Point(0, 18), Size = new Size(272, 25), DropDownStyle = ComboBoxStyle.DropDownList };
     readonly TextBox _label = new() { Location = new Point(0, 68), Size = new Size(272, 23) };
     readonly TextBox _unit = new() { Location = new Point(0, 118), Size = new Size(130, 23) };
     readonly NumericUpDown _decimals = Num(0, 3, 150, 118, 70);
     readonly NumericUpDown _warn = Num(0, 100000, 0, 168, 80), _crit = Num(0, 100000, 96, 168, 80), _max = Num(1, 100000, 192, 168, 80);
     readonly CheckBox _bar = new() { Location = new Point(0, 216), Text = "Barra de progreso", AutoSize = true };
+    // Solo para Total Power: estimación del resto del equipo y de la fuente.
+    readonly Panel _gTotal = new() { Location = new Point(0, 240), Size = new Size(272, 50), Visible = false };
+    readonly NumericUpDown _extra = Num(0, 2000, 0, 20, 90), _eff = Num(0, 100, 150, 20, 90);
 
     // --- Grupo: reloj ---
     readonly Panel _gClock = new() { Location = new Point(0, 60), Size = new Size(272, 100), Visible = false };
@@ -96,10 +99,10 @@ sealed class ComponentsForm : Form
         StartPosition = FormStartPosition.CenterParent;
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoScaleDimensions = new SizeF(96f, 96f);
-        ClientSize = new Size(1200, 672);
+        ClientSize = new Size(1200, 722);
 
         _browse = Ui.MakeButton("Examinar", 198, 121, 74, 25, false, BrowseFile);
-        _props = Ui.MakeCard(888, 96, 300, 520, "");
+        _props = Ui.MakeCard(888, 96, 300, 570, "");
         _props.Controls.Add(_empty);
         _props.Controls.Add(_propsInner);
         _propsInner.Visible = false;
@@ -118,8 +121,8 @@ sealed class ComponentsForm : Form
         Controls.Add(_canvas);
         Controls.Add(_props);
         Controls.Add(_status);
-        Btn("Cancelar", 958, 626, 94, Close);
-        Btn("Guardar y aplicar", 1060, 626, 128, Save, primary: true);
+        Btn("Cancelar", 958, 676, 94, Close);
+        Btn("Guardar y aplicar", 1060, 676, 128, Save, primary: true);
 
         _canvas.SelectionChanged += c => Select(_items.FirstOrDefault(i => i.Cfg == c));
         _canvas.GeometryChanged += OnCanvasMoved;
@@ -232,7 +235,15 @@ sealed class ComponentsForm : Form
             Edit(c =>
             {
                 c.Sensor = o.Key;
-                if (_catalog.TryGetValue(o.Key, out var info))
+                if (TotalPower.Is(o.Key))
+                {
+                    c.Label = "TOTAL POWER";
+                    c.Unit = " W";
+                    c.Decimals = 0;
+                    c.Bar = true;
+                    c.Max = 600;
+                }
+                else if (_catalog.TryGetValue(o.Key, out var info))
                 {
                     c.Label = info.Name;
                     c.Unit = info.Unit;
@@ -248,6 +259,15 @@ sealed class ComponentsForm : Form
         _crit.ValueChanged += (_, _) => Edit(c => c.Crit = _crit.Value == 0 ? null : (double)_crit.Value);
         _max.ValueChanged += (_, _) => Edit(c => c.Max = (double)_max.Value);
         _bar.CheckedChanged += (_, _) => Edit(c => c.Bar = _bar.Checked);
+
+        _gTotal.Controls.Add(Lbl("+ W estimados", 0, 0));
+        _gTotal.Controls.Add(_extra);
+        _gTotal.Controls.Add(Lbl("Eficiencia fuente %", 150, 0));
+        _gTotal.Controls.Add(_eff);
+        _gSensor.Controls.Add(_gTotal);
+        _extra.ValueChanged += (_, _) => Edit(c => c.ExtraWatts = (int)_extra.Value);
+        // 0 = sin ajuste; por debajo de 50 % no es una fuente real, así que se lleva a 50.
+        _eff.ValueChanged += (_, _) => Edit(c => c.PsuEfficiency = _eff.Value == 0 ? 0 : Math.Max(50, (int)_eff.Value));
 
         // Reloj
         _gClock.Controls.Add(Lbl("Formato de hora", 0, 0));
@@ -284,17 +304,17 @@ sealed class ComponentsForm : Form
         _file.TextChanged += (_, _) => Edit(c => c.File = _file.Text.Trim());
 
         // Común
-        p.Controls.Add(Lbl("Tamaño de fuente (0 = automático)", 0, 306));
+        p.Controls.Add(Lbl("Tamaño de fuente (0 = automático)", 0, 356));
         p.Controls.Add(_font);
         _font.ValueChanged += (_, _) => Edit(c => c.FontSize = (float)_font.Value);
-        p.Controls.Add(Lbl("Posición y tamaño (píxeles)", 0, 360));
-        p.Controls.Add(Lbl("X", 0, 380));
+        p.Controls.Add(Lbl("Posición y tamaño (píxeles)", 0, 410));
+        p.Controls.Add(Lbl("X", 0, 430));
         p.Controls.Add(_x);
-        p.Controls.Add(Lbl("Y", 110, 380));
+        p.Controls.Add(Lbl("Y", 110, 430));
         p.Controls.Add(_y);
-        p.Controls.Add(Lbl("Ancho", 0, 428));
+        p.Controls.Add(Lbl("Ancho", 0, 478));
         p.Controls.Add(_w);
-        p.Controls.Add(Lbl("Alto", 110, 428));
+        p.Controls.Add(Lbl("Alto", 110, 478));
         p.Controls.Add(_h);
         _x.ValueChanged += (_, _) => Edit(c => c.X = (int)_x.Value);
         _y.ValueChanged += (_, _) => Edit(c => c.Y = (int)_y.Value);
@@ -347,6 +367,8 @@ sealed class ComponentsForm : Form
         Quiet(() =>
         {
             _sensorBox.Items.Clear();
+            if (_svc.Sensors is { } src && TotalPower.Available(src))
+                _sensorBox.Items.Add(new SensorOption(TotalPower.Key, TotalPower.Display));
             foreach (var info in _catalogList) _sensorBox.Items.Add(new SensorOption(info.Key, info.Display));
         });
     }
@@ -418,6 +440,9 @@ sealed class ComponentsForm : Form
                     SetNum(_crit, c.Crit ?? 0);
                     SetNum(_max, c.Max);
                     _bar.Checked = c.Bar;
+                    _gTotal.Visible = TotalPower.Is(c.Sensor);
+                    SetNum(_extra, c.ExtraWatts);
+                    SetNum(_eff, c.PsuEfficiency);
                     break;
             }
             SetNum(_font, c.FontSize);

@@ -59,8 +59,8 @@ static class DisplayLayout
                 case "text":
                     return "";
                 default:
-                    var v = s?.Get(c.Sensor);
-                    return v is float f ? f.ToString("F" + c.Decimals, CultureInfo.InvariantCulture) + c.Unit : "--";
+                    var v = TotalPower.ValueFor(c, s);
+                    return v is float f ? TotalPower.Prefix(c) + f.ToString("F" + c.Decimals, CultureInfo.InvariantCulture) + c.Unit : "--";
             }
         }
         catch (FormatException)

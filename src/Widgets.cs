@@ -109,7 +109,7 @@ sealed class SensorWidget : Widget
         _value = FontFactory.Make(look.ValueFont, c.FontSize > 0 ? c.FontSize : 20f, look.ValueStyle);
     }
 
-    string Fmt(float v) => v.ToString("F" + _c.Decimals, CultureInfo.InvariantCulture) + _c.Unit;
+    string Fmt(float v) => TotalPower.Prefix(_c) + v.ToString("F" + _c.Decimals, CultureInfo.InvariantCulture) + _c.Unit;
 
     public override void Dispose()
     {
@@ -119,7 +119,7 @@ sealed class SensorWidget : Widget
 
     public override string Signature(DateTime now, ISensorSource? s)
     {
-        _v = s?.Get(_c.Sensor);
+        _v = TotalPower.ValueFor(_c, s);
         return _v is float v ? Fmt(v) : "--";
     }
 

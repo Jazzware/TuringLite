@@ -143,18 +143,22 @@ public sealed class RemoteSensors : ISensorSource
 
     public float? Get(string key)
     {
+        if (TotalPower.Is(key)) return TotalPower.Measured(this);
         var state = _state;
         if (DateTime.UtcNow - state.At > StaleAfter) return null;
         var id = Canonical(key);
         return id != null && state.Values.TryGetValue(id, out var value) ? value : null;
     }
 
-    public bool Has(string key) => Canonical(key) is { } id && _state.Values.ContainsKey(id);
+    public bool Has(string key) => TotalPower.Is(key)
+        ? Has("cpu.power") || Has("gpu.power")
+        : Canonical(key) is { } id && _state.Values.ContainsKey(id);
 
     public bool Track(string key) => Canonical(key) != null;
 
     public string? Canonical(string key)
     {
+        if (TotalPower.Is(key)) return TotalPower.Available(this) ? key : null;
         if (key.StartsWith('/')) return _known.Contains(key) ? key : null;
         return _state.Aliases.GetValueOrDefault(key);
     }

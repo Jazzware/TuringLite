@@ -81,6 +81,7 @@ public sealed class Sensors : ISensorSource
     /// </summary>
     public bool Track(string key)
     {
+        if (TotalPower.Is(key)) return TotalPower.Track(this);
         lock (_lock)
         {
             if (_disposed || _pc == null) return false;
@@ -96,6 +97,7 @@ public sealed class Sensors : ISensorSource
     /// <summary>Identificador real al que apunta un alias antiguo, o la propia clave si ya es un identificador.</summary>
     public string? Canonical(string key)
     {
+        if (TotalPower.Is(key)) return TotalPower.Available(this) ? key : null;
         lock (_lock)
         {
             if (key.StartsWith('/')) return _all.ContainsKey(key) ? key : null;
@@ -172,6 +174,7 @@ public sealed class Sensors : ISensorSource
 
     public float? Get(string key)
     {
+        if (TotalPower.Is(key)) return TotalPower.Measured(this);
         lock (_lock)
         {
             if (_disposed || !_map.TryGetValue(key, out var s)) return null;
@@ -184,6 +187,7 @@ public sealed class Sensors : ISensorSource
 
     public bool Has(string key)
     {
+        if (TotalPower.Is(key)) return Has("cpu.power") || Has("gpu.power");
         lock (_lock) return _map.ContainsKey(key);
     }
 
