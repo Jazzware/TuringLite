@@ -16,7 +16,7 @@ public sealed record SetupOptions(string InstallDir, bool Shortcut, bool Autosta
 /// </summary>
 public static class Installer
 {
-    public const string Version = "1.0.2";
+    public const string Version = "1.0.3";
     public const string Marker = "install.marker";
     const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\TuringLite";
 
@@ -43,22 +43,60 @@ public static class Installer
     }
 
     /// <summary>Instancias de TuringLite abiertas desde esta carpeta: no se puede reemplazar archivos en uso.</summary>
-    public static bool AppRunningFrom(string dir)
+    public static bool AppRunningFrom(string dir) => RunningFrom(dir, close: false) > 0;
+
+    /// <summary>Cierra las instancias abiertas desde esta carpeta. Devuelve true si ya no queda ninguna.</summary>
+    public static bool CloseAppFrom(string dir)
+    {
+        RunningFrom(dir, close: true);
+        return !AppRunningFrom(dir);
+    }
+
+    static int RunningFrom(string dir, bool close)
     {
         var exe = Path.Combine(dir, "TuringLite.exe");
+        int count = 0;
         foreach (var p in Process.GetProcessesByName("TuringLite"))
         {
             try
             {
-                if (string.Equals(p.MainModule?.FileName, exe, StringComparison.OrdinalIgnoreCase)) return true;
+                if (!string.Equals(p.MainModule?.FileName, exe, StringComparison.OrdinalIgnoreCase)) continue;
+                count++;
+                if (close)
+                {
+                    p.Kill();
+                    p.WaitForExit(5000);
+                }
             }
             catch (Exception)
             {
-                // Proceso de otro usuario o sin acceso: no es de esta instalación.
+                // Proceso de otro usuario o sin acceso (p. ej. el servicio, que corre como sistema): no es de esta instalación.
             }
             finally { p.Dispose(); }
         }
-        return false;
+        return count;
+    }
+
+    /// <summary>
+    /// El servicio de sensores ya está instalado. Al actualizar hay que actualizarlo también: si no, su copia en
+    /// Program Files se queda en la versión anterior. Instalarlo de nuevo lo detiene, copia la versión nueva y lo arranca.
+    /// </summary>
+    public static bool ServiceInstalled()
+    {
+        try
+        {
+            using var p = Process.Start(new ProcessStartInfo("sc.exe", "query TuringLiteSensors")
+            {
+                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true,
+            })!;
+            p.StandardOutput.ReadToEnd();
+            p.WaitForExit(5000);
+            return p.ExitCode == 0;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     /// <summary>Instala. Devuelve avisos de lo que no se pudo completar (la instalación base sí queda hecha).</summary>

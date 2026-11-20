@@ -23,6 +23,7 @@ sealed class SetupForm : Form
     readonly Button _install;
     readonly Button _cancel;
     bool _done;
+    bool _serviceLocked;
 
     public SetupForm()
     {
@@ -67,6 +68,15 @@ sealed class SetupForm : Form
         Controls.AddRange(new Control[] { title, intro, folderLabel, _dir, _shortcut, _autostart, _service, _launch,
             _status, _progress, _install, _cancel });
 
+        // Si el servicio ya existe se actualiza siempre: dejarlo en la versión anterior no es una opción.
+        if (Installer.ServiceInstalled())
+        {
+            _service.Text = "Actualizar el servicio de sensores (ya instalado: se reinicia con la versión nueva; pide administrador)";
+            _service.Checked = true;
+            _service.Enabled = false;
+            _serviceLocked = true;
+        }
+
         // Sin .NET 8 Desktop Runtime la app no arranca: no se instala nada y se ofrece la página oficial.
         if (!Installer.HasDesktopRuntime())
         {
@@ -87,9 +97,15 @@ sealed class SetupForm : Form
         var dir = _dir.Text;
         if (Installer.AppRunningFrom(dir))
         {
-            MessageBox.Show(this, "TuringLite sigue abierto. Ciérralo desde la bandeja del sistema (Salir) y vuelve a intentarlo.",
-                "Instalar TuringLite", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
+            var answer = MessageBox.Show(this, "TuringLite está abierto y hay que cerrarlo para actualizarlo. ¿Cerrarlo y continuar?",
+                "Instalar TuringLite", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
+            if (answer != DialogResult.OK) return;
+            if (!Installer.CloseAppFrom(dir))
+            {
+                MessageBox.Show(this, "No se pudo cerrar TuringLite. Ciérralo desde la bandeja del sistema (Salir) y vuelve a intentarlo.",
+                    "Instalar TuringLite", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
         }
         var options = new SetupOptions(dir, _shortcut.Checked, _autostart.Checked, _service.Checked, _launch.Checked);
         _install.Enabled = false;
@@ -112,7 +128,8 @@ sealed class SetupForm : Form
         {
             _status.Text = "No se pudo instalar: " + error;
             _install.Enabled = true;
-            _shortcut.Enabled = _autostart.Enabled = _service.Enabled = _launch.Enabled = true;
+            _shortcut.Enabled = _autostart.Enabled = _launch.Enabled = true;
+            _service.Enabled = !_serviceLocked;
             return;
         }
         _status.Text = warnings.Count == 0

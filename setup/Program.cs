@@ -31,7 +31,7 @@ static class Program
             InstallDir: Value("dir", Installer.DefaultDir),
             Shortcut: Flag("shortcut", true),
             Autostart: Flag("autostart", true),
-            Service: Flag("service", false),
+            Service: Flag("service", Installer.ServiceInstalled()),
             Launch: Flag("launch", false));
         if (Installer.AppRunningFrom(options.InstallDir)) return 2;
         try

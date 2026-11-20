@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+
+- Instalador: si TuringLite está abierto, ofrece cerrarlo y continuar en lugar de detenerse.
+- Instalador: si el servicio de sensores ya está instalado, siempre se actualiza (se reinicia con la versión nueva),
+  para que no quede en una versión distinta a la de la app. También en la instalación silenciosa.
+
 ## 1.0.2
 
 - Sensor nuevo «PC · Potencia total (CPU + GPU)»: suma la potencia del procesador y la de la GPU dedicada
