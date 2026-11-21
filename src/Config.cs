@@ -7,7 +7,7 @@ namespace TuringLite;
 
 public sealed class WidgetConfig
 {
-    public string Type { get; set; } = "sensor";   // sensor | clock | text
+    public string Type { get; set; } = "sensor";   // sensor | clock | text | battery
     public bool Enabled { get; set; } = true;       // false = configurado pero oculto
     public bool Locked { get; set; }                // true = el editor no deja moverlo ni cambiar su tamaño
     public int X { get; set; }
@@ -30,14 +30,24 @@ public sealed class WidgetConfig
     // Solo para el sensor "pc.power" (Total Power): estimación del resto del equipo y de la fuente.
     public int ExtraWatts { get; set; }             // W fijos que se suman (placa, RAM, discos, ventiladores...)
     public int PsuEfficiency { get; set; }          // % de eficiencia de la fuente (0 = no se aplica)
+    // Solo para "battery": qué dispositivos, cómo se reparten y qué se muestra.
+    public List<string> Devices { get; set; } = new(); // identificadores a mostrar (vacío = todos)
+    public string Arrange { get; set; } = "auto";      // auto | row | column
+    public bool ShowNames { get; set; }
+    public bool HideOffline { get; set; }
 
-    public WidgetConfig Clone() => (WidgetConfig)MemberwiseClone();
+    public WidgetConfig Clone()
+    {
+        var c = (WidgetConfig)MemberwiseClone();
+        c.Devices = new List<string>(Devices ?? new());
+        return c;
+    }
 
     /// <summary>Deja el componente dentro de la pantalla y con valores que el dibujo puede usar.</summary>
     public void Normalize(Size screen)
     {
         var type = (Type ?? "").ToLowerInvariant();
-        Type = type is "clock" or "text" ? type : "sensor";
+        Type = type is "clock" or "text" or "battery" ? type : "sensor";
         W = Math.Clamp(W, 10, screen.Width);
         H = Math.Clamp(H, 10, screen.Height);
         X = Math.Clamp(X, 0, screen.Width - W);
@@ -53,6 +63,8 @@ public sealed class WidgetConfig
         Format ??= "HH:mm";
         Text ??= "";
         File ??= "";
+        Devices = Devices?.Where(d => !string.IsNullOrWhiteSpace(d)).Distinct().ToList() ?? new List<string>();
+        Arrange = Arrange is "row" or "column" ? Arrange : "auto";
     }
 }
 

@@ -26,6 +26,7 @@ abstract class Widget : IDisposable
         {
             "clock" => new ClockWidget(c, look),
             "text" => new TextWidget(c, look),
+            "battery" => new BatteryWidget(c, look),
             _ => new SensorWidget(c, look),
         };
         w.Bounds = new Rectangle(c.X, c.Y, c.W, c.H);
@@ -167,7 +168,16 @@ sealed class ClockWidget : Widget
         var area = PaintBackdrop(g, size);
         using var b = new SolidBrush(Look.Text);
         using var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-        g.DrawString(_text, _font, b, new RectangleF(area.X, area.Y, area.Width, area.Height), sf);
+        // Si la hora no cabe (fuentes anchas como Consolas, o formatos largos), se reduce la letra en vez de cortarla.
+        var font = _font;
+        var need = g.MeasureString(_text, font);
+        float scale = Math.Min((area.Width - 4) / need.Width, (area.Height - 2) / need.Height);
+        Font? fitted = scale < 1f ? FontFactory.Make(_font.FontFamily.Name, _font.Size * scale, _font.Style) : null;
+        try
+        {
+            g.DrawString(_text, fitted ?? font, b, new RectangleF(area.X, area.Y, area.Width, area.Height), sf);
+        }
+        finally { fitted?.Dispose(); }
     }
 }
 

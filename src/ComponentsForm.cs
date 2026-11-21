@@ -82,6 +82,17 @@ sealed class ComponentsForm : Form
 
     // --- Grupo: texto ---
     readonly Panel _gText = new() { Location = new Point(0, 60), Size = new Size(272, 200), Visible = false };
+    readonly Panel _gBattery = new() { Location = new Point(0, 60), Size = new Size(272, 290), Visible = false };
+    readonly CheckedListBox _devices = new()
+    {
+        Location = new Point(0, 18), Size = new Size(272, 96), CheckOnClick = true, IntegralHeight = false,
+        BorderStyle = BorderStyle.FixedSingle, BackColor = Ui.Field, ForeColor = Ui.Ink,
+    };
+    readonly ComboBox _arrange = new() { Location = new Point(0, 140), Size = new Size(180, 26), DropDownStyle = ComboBoxStyle.DropDownList };
+    readonly CheckBox _showNames = new() { Location = new Point(0, 176), Text = "Mostrar nombres", AutoSize = true };
+    readonly CheckBox _hideOffline = new() { Location = new Point(0, 200), Text = "Ocultar dispositivos apagados", AutoSize = true };
+    static readonly (string Key, string Text)[] Arrangements = { ("auto", "Automática"), ("row", "En fila"), ("column", "En columna") };
+    string _deviceSignature = "";
     readonly TextBox _text = new() { Location = new Point(0, 18), Size = new Size(272, 80), Multiline = true, ScrollBars = ScrollBars.Vertical };
     readonly TextBox _file = new() { Location = new Point(0, 122), Size = new Size(190, 23) };
     readonly Button _browse;
@@ -145,11 +156,12 @@ sealed class ComponentsForm : Form
         Btn("+ Sensor", 62, 14, 96, () => AddItem(NewSensor()));
         Btn("+ Reloj", 164, 14, 88, () => AddItem(new WidgetConfig { Type = "clock", Format = "HH:mm", X = 10, Y = 10, W = 200, H = 64 }));
         Btn("+ Texto", 258, 14, 88, () => AddItem(new WidgetConfig { Type = "text", Text = "Texto", X = 10, Y = 10, W = 250, H = 60 }));
-        Controls.Add(Ui.MakeLabel("Editar", 366, 21, dim: true));
-        Btn("Quitar", 414, 14, 84, RemoveSelected);
-        Btn("Duplicar", 504, 14, 96, Duplicate);
-        Btn("▲ Subir", 606, 14, 90, () => MoveItem(1));
-        Btn("▼ Bajar", 702, 14, 90, () => MoveItem(-1));
+        Btn("+ Baterías", 352, 14, 100, () => AddItem(new WidgetConfig { Type = "battery", X = 10, Y = 10, W = 300, H = 60 }));
+        Controls.Add(Ui.MakeLabel("Editar", 470, 21, dim: true));
+        Btn("Quitar", 518, 14, 84, RemoveSelected);
+        Btn("Duplicar", 608, 14, 96, Duplicate);
+        Btn("▲ Subir", 710, 14, 90, () => MoveItem(1));
+        Btn("▼ Bajar", 806, 14, 90, () => MoveItem(-1));
 
         Controls.Add(Ui.MakeLabel("Plantilla", 12, 61, dim: true));
         foreach (var t in DisplayLayout.Templates) _templateBox.Items.Add(t.Name);
@@ -268,6 +280,28 @@ sealed class ComponentsForm : Form
         _extra.ValueChanged += (_, _) => Edit(c => c.ExtraWatts = (int)_extra.Value);
         // 0 = sin ajuste; por debajo de 50 % no es una fuente real, así que se lleva a 50.
         _eff.ValueChanged += (_, _) => Edit(c => c.PsuEfficiency = _eff.Value == 0 ? 0 : Math.Max(50, (int)_eff.Value));
+
+        // Baterías
+        _gBattery.Controls.Add(Lbl("Dispositivos a mostrar", 0, 0));
+        _gBattery.Controls.Add(_devices);
+        _gBattery.Controls.Add(Lbl("Distribución", 0, 122));
+        foreach (var a in Arrangements) _arrange.Items.Add(a.Text);
+        _gBattery.Controls.Add(_arrange);
+        _gBattery.Controls.Add(_showNames);
+        _gBattery.Controls.Add(_hideOffline);
+        _gBattery.Controls.Add(new Label
+        {
+            Location = new Point(0, 228), Size = new Size(272, 56), AutoSize = false, ForeColor = Ui.Dim,
+            Text = "Logitech LIGHTSPEED/Unifying/Bolt y ASTRO A50 Gen 5. Se actualiza cada minuto; " +
+                   "un dispositivo nuevo aparece aquí cuando se detecta.",
+        });
+        p.Controls.Add(_gBattery);
+        // ItemCheck llega antes de cambiar la marca: se aplica cuando la lista ya tiene el estado nuevo.
+        _devices.ItemCheck += (_, _) => BeginInvoke(() => Edit(c => c.Devices = CheckedDevices()));
+        _arrange.SelectedIndexChanged += (_, _) =>
+            Edit(c => c.Arrange = Arrangements[Math.Max(0, _arrange.SelectedIndex)].Key);
+        _showNames.CheckedChanged += (_, _) => Edit(c => c.ShowNames = _showNames.Checked);
+        _hideOffline.CheckedChanged += (_, _) => Edit(c => c.HideOffline = _hideOffline.Checked);
 
         // Reloj
         _gClock.Controls.Add(Lbl("Formato de hora", 0, 0));
@@ -418,6 +452,7 @@ sealed class ComponentsForm : Form
             _gSensor.Visible = c.Type == "sensor";
             _gClock.Visible = c.Type == "clock";
             _gText.Visible = c.Type == "text";
+            _gBattery.Visible = c.Type == "battery";
             _enabled.Checked = c.Enabled;
             _locked.Checked = c.Locked;
             UpdateGeometryLock();
@@ -430,6 +465,12 @@ sealed class ComponentsForm : Form
                 case "text":
                     _text.Text = c.Text;
                     _file.Text = c.File;
+                    break;
+                case "battery":
+                    FillDevices(c);
+                    _arrange.SelectedIndex = Math.Max(0, Array.FindIndex(Arrangements, a => a.Key == c.Arrange));
+                    _showNames.Checked = c.ShowNames;
+                    _hideOffline.Checked = c.HideOffline;
                     break;
                 default:
                     SelectSensorOption(c.Sensor);
@@ -492,6 +533,7 @@ sealed class ComponentsForm : Form
     {
         "clock" => "Reloj",
         "text" => "Texto",
+        "battery" => "Baterías",
         _ => "Sensor",
     };
 
@@ -567,8 +609,43 @@ sealed class ComponentsForm : Form
         }
     }
 
+    sealed record DeviceOption(string Id, string Text)
+    {
+        public override string ToString() => Text;
+    }
+
+    /// <summary>
+    /// Lista de dispositivos detectados más los guardados que ahora no están. Marcados = se muestran.
+    /// Sin ninguno elegido en la configuración se muestran todos, también los que se detecten después.
+    /// </summary>
+    void FillDevices(WidgetConfig c)
+    {
+        var found = BatteryCache.Latest;
+        _deviceSignature = string.Join("|", found.Select(b => b.Id));
+        var options = found.Select(b => new DeviceOption(b.Id, b.Name)).ToList();
+        foreach (var id in c.Devices.Where(id => options.All(o => o.Id != id)))
+            options.Add(new DeviceOption(id, $"{id} (no detectado)"));
+        Quiet(() =>
+        {
+            _devices.Items.Clear();
+            foreach (var o in options) _devices.Items.Add(o, c.Devices.Count == 0 || c.Devices.Contains(o.Id));
+        });
+    }
+
+    /// <summary>Elección actual. Todos marcados = lista vacía (todos, incluidos los futuros).</summary>
+    List<string> CheckedDevices()
+    {
+        var all = _devices.Items.Cast<DeviceOption>().ToList();
+        var chosen = _devices.CheckedItems.Cast<DeviceOption>().Select(o => o.Id).ToList();
+        return chosen.Count == all.Count ? new List<string>() : chosen;
+    }
+
     void UpdateValues()
     {
+        // La primera lectura de baterías llega unos segundos después de abrir: se rellena la lista entonces.
+        if (_sel is { Cfg.Type: "battery" } bat
+            && string.Join("|", BatteryCache.Latest.Select(b => b.Id)) != _deviceSignature)
+            FillDevices(bat.Cfg);
         foreach (ListViewItem li in _list.Items)
             if (li.Tag is Item it) li.SubItems[1].Text = ValueText(it.Cfg);
     }
@@ -577,6 +654,7 @@ sealed class ComponentsForm : Form
     {
         "clock" => "Reloj",
         "text" => c.File.Length > 0 ? "Texto: " + c.File : "Texto: " + Trunc(c.Text),
+        "battery" => "Baterías",
         _ => c.Label.Length > 0 ? c.Label : NameOf(c.Sensor),
     };
 

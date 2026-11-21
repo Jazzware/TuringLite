@@ -58,6 +58,10 @@ static class DisplayLayout
                     return DateTime.Now.ToString(c.Format, CultureInfo.InvariantCulture);
                 case "text":
                     return "";
+                case "battery":
+                    var list = BatteryFilter.Apply(BatteryCache.Latest, c);
+                    if (list.Count == 0) return BatteryCache.Ready ? "sin dispositivos" : "leyendo…";
+                    return string.Join(" · ", list.Select(b => b.Percent is int p ? p + "%" : "--"));
                 default:
                     var v = TotalPower.ValueFor(c, s);
                     return v is float f ? TotalPower.Prefix(c) + f.ToString("F" + c.Decimals, CultureInfo.InvariantCulture) + c.Unit : "--";

@@ -1,6 +1,6 @@
 # TuringLite
 
-Monitor de hardware para la mini pantalla USB Turing Smart Screen de 3,5". Muestra temperaturas, cargas, potencia y tu propio texto, con temas visuales.
+Monitor de hardware para la mini pantalla USB Turing Smart Screen de 3,5". Muestra temperaturas, cargas, potencia, la batería de tus periféricos inalámbricos (Logitech LIGHTSPEED/Unifying/Bolt y ASTRO A50 Gen 5) y tu propio texto, con temas visuales.
 
 ## Requisitos
 

@@ -281,6 +281,7 @@ sealed class MainForm : Form
     {
         "clock" => "Reloj",
         "text" => "Texto",
+        "battery" => "Baterías",
         _ => c.Label.Length > 0 ? c.Label : "(sin etiqueta)",
     };
 
@@ -341,6 +342,8 @@ sealed class MainForm : Form
             Font = mono, Text = text.Replace("\n", Environment.NewLine).Replace("\r\r", "\r"),
             Dock = DockStyle.Fill, BorderStyle = BorderStyle.None,
         };
+        // Las baterías se leen aparte (tardan unos segundos) y se añaden al final cuando llegan.
+        text += "\n\n[Baterías de periféricos]\nLeyendo…";
         var copy = Ui.MakeButton("Copiar al portapapeles", 0, 0, 0, 32, true, () => Clipboard.SetText(text));
         copy.Dock = DockStyle.Bottom;
         copy.FlatAppearance.BorderSize = 0;
@@ -349,8 +352,38 @@ sealed class MainForm : Form
         Ui.Dark(dlg);
         box.BackColor = Ui.Field;
         box.ForeColor = Ui.Ink;
+        dlg.Shown += (_, _) => Task.Run(() =>
+        {
+            string batteries;
+            try
+            {
+                var list = BatteryReader.ReadAll();
+                batteries = list.Count == 0
+                    ? "  No se encontró ningún dispositivo compatible."
+                    : string.Join("\n", list.Select(b =>
+                        $"  {b.Name} ({KindName(b.Kind)}): {(b.Percent is int p ? p + " %" : "--")}{(b.Charging ? " · cargando" : "")}"));
+            }
+            catch (Exception ex)
+            {
+                batteries = "  Error al leer las baterías: " + ex.Message;
+            }
+            if (dlg.IsDisposed) return;
+            dlg.BeginInvoke(() =>
+            {
+                text = text.Replace("Leyendo…", batteries.TrimStart('\n'));
+                box.Text = text.Replace("\n", Environment.NewLine).Replace("\r\r", "\r");
+            });
+        });
         dlg.ShowDialog(this);
     }
+
+    static string KindName(BatteryKind k) => k switch
+    {
+        BatteryKind.Mouse => "ratón",
+        BatteryKind.Keyboard => "teclado",
+        BatteryKind.Headset => "audífonos",
+        _ => "otro",
+    };
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {

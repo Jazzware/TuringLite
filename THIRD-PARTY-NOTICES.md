@@ -26,3 +26,9 @@ TuringLite no modifica ninguno de estos componentes.
 El cliente del protocolo serie de la pantalla (`src/RevADisplay.cs`) se basa en
 [turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python) de Matthieu Houdebine,
 publicado con licencia GPL-3.0. Por eso TuringLite se publica también con GPL-3.0 (ver `LICENSE`).
+
+## Baterías de periféricos
+
+La lectura de batería de la base ASTRO A50 Gen 5 (`src/Batteries.cs`) sigue el protocolo documentado por
+[HeadsetControl](https://github.com/Sapd/HeadsetControl) (GPL-3.0). La de los dispositivos Logitech usa el protocolo
+HID++ 2.0 de Logitech, tal como lo describen proyectos libres como [Solaar](https://github.com/pwr-Solaar/Solaar).
