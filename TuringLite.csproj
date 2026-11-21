@@ -16,10 +16,10 @@
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>TuringLite</AssemblyName>
-    <Version>1.0.3</Version>
-    <AssemblyVersion>1.0.3.0</AssemblyVersion>
-    <FileVersion>1.0.3.0</FileVersion>
-    <InformationalVersion>1.0.3</InformationalVersion>
+    <Version>1.0.4</Version>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <FileVersion>1.0.4.0</FileVersion>
+    <InformationalVersion>1.0.4</InformationalVersion>
     <Product>TuringLite</Product>
     <Company>TuringLite</Company>
     <Description>Monitor de hardware para la pantalla USB Turing Smart Screen</Description>

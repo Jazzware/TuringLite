@@ -16,7 +16,7 @@ public sealed record SetupOptions(string InstallDir, bool Shortcut, bool Autosta
 /// </summary>
 public static class Installer
 {
-    public const string Version = "1.0.3";
+    public const string Version = "1.0.4";
     public const string Marker = "install.marker";
     const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\TuringLite";
 

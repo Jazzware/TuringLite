@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.4
+
+- Componente nuevo «Baterías»: muestra el % de batería de ratones, teclados y audífonos inalámbricos con un icono,
+  el porcentaje y una barra (colores de aviso por debajo del 30 % y 15 %, rayo al cargar).
+  Compatible con Logitech LIGHTSPEED/Unifying/Bolt (HID++) y la base ASTRO A50 Gen 5. No necesita G HUB.
+- Opciones del componente: qué dispositivos mostrar, en fila o en columna, nombres y ocultar los apagados.
+- «Ver todos los sensores» lista también las baterías detectadas.
+- Corrección: el reloj reduce la letra si la hora no cabe (se cortaba en temas como Terminal).
+
 ## 1.0.3
 
 - Instalador: si TuringLite está abierto, ofrece cerrarlo y continuar en lugar de detenerse.
